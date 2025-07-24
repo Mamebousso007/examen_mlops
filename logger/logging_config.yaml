@@ -1,0 +1,182 @@
+version: 1
+disable_existing_loggers: false
+
+formatters:
+  standard:
+    format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    datefmt: "%Y-%m-%d %H:%M:%S"
+  
+  detailed:
+    format: "%(asctime)s - %(name)s - %(levelname)s - %(filename)s:%(lineno)d - %(funcName)s() - %(message)s"
+    datefmt: "%Y-%m-%d %H:%M:%S"
+  
+  json:
+    format: "%(asctime)s"
+    datefmt: "%Y-%m-%d %H:%M:%S"
+    class: "pythonjsonlogger.jsonlogger.JsonFormatter"
+  
+  prediction:
+    format: "[PREDICTION] %(asctime)s - %(levelname)s - %(message)s - Duration: %(duration)s - Features: %(input_features)s - Result: %(prediction)s"
+    datefmt: "%Y-%m-%d %H:%M:%S"
+  
+  api:
+    format: "[API] %(asctime)s - %(request_type)s - %(method)s %(url)s - Status: %(status_code)s - Duration: %(duration)s - IP: %(client_ip)s"
+    datefmt: "%Y-%m-%d %H:%M:%S"
+  
+  error:
+    format: "[ERROR] %(asctime)s - %(name)s - %(levelname)s - %(filename)s:%(lineno)d - %(error_category)s - %(message)s"
+    datefmt: "%Y-%m-%d %H:%M:%S"
+
+filters:
+  prediction_filter:
+    (): logger.filters.PredictionFilter
+  
+  api_filter:
+    (): logger.filters.APIFilter
+  
+  error_filter:
+    (): logger.filters.ErrorFilter
+  
+  performance_filter:
+    (): logger.filters.PerformanceFilter
+    slow_threshold: 1.0
+  
+  sensitive_data_filter:
+    (): logger.filters.SensitiveDataFilter
+  
+  rate_limit_filter:
+    (): logger.filters.RateLimitFilter
+    max_rate: 10
+    time_window: 60
+
+handlers:
+  console:
+    class: logging.StreamHandler
+    level: INFO
+    formatter: standard
+    stream: ext://sys.stdout
+    filters: [sensitive_data_filter, rate_limit_filter]
+  
+  file_general:
+    class: logging.handlers.RotatingFileHandler
+    level: INFO
+    formatter: detailed
+    filename: logs/api.log
+    maxBytes: 10485760  # 10MB
+    backupCount: 5
+    encoding: utf8
+    filters: [sensitive_data_filter]
+  
+  file_predictions:
+    class: logging.handlers.RotatingFileHandler
+    level: INFO
+    formatter: prediction
+    filename: logs/predictions.log
+    maxBytes: 10485760  # 10MB
+    backupCount: 10
+    encoding: utf8
+    filters: [prediction_filter]
+  
+  file_api:
+    class: logging.handlers.RotatingFileHandler
+    level: INFO
+    formatter: api
+    filename: logs/api_requests.log
+    maxBytes: 10485760  # 10MB
+    backupCount: 10
+    encoding: utf8
+    filters: [api_filter]
+  
+  file_errors:
+    class: logging.handlers.RotatingFileHandler
+    level: ERROR
+    formatter: error
+    filename: logs/errors.log
+    maxBytes: 10485760  # 10MB
+    backupCount: 20
+    encoding: utf8
+    filters: [error_filter]
+  
+  file_performance:
+    class: logging.handlers.RotatingFileHandler
+    level: WARNING
+    formatter: detailed
+    filename: logs/performance.log
+    maxBytes: 5242880  # 5MB
+    backupCount: 5
+    encoding: utf8
+    filters: [performance_filter]
+  
+  json_file:
+    class: logging.handlers.RotatingFileHandler
+    level: INFO
+    formatter: json
+    filename: logs/structured.json
+    maxBytes: 10485760  # 10MB
+    backupCount: 5
+    encoding: utf8
+
+loggers:
+  # Logger principal de l'application
+  "":
+    level: INFO
+    handlers: [console, file_general]
+    propagate: false
+  
+  # Logger pour les prédictions
+  prediction:
+    level: INFO
+    handlers: [console, file_predictions, json_file]
+    propagate: false
+    qualname: prediction
+  
+  # Logger pour les requêtes API
+  api:
+    level: INFO
+    handlers: [console, file_api]
+    propagate: false
+    qualname: api
+  
+  # Logger pour les erreurs
+  error:
+    level: ERROR
+    handlers: [console, file_errors, json_file]
+    propagate: false
+    qualname: error
+  
+  # Logger pour la performance
+  performance:
+    level: WARNING
+    handlers: [console, file_performance]
+    propagate: false
+    qualname: performance
+  
+  # Loggers pour les bibliothèques externes
+  uvicorn:
+    level: INFO
+    handlers: [console, file_general]
+    propagate: false
+  
+  uvicorn.access:
+    level: INFO
+    handlers: [file_api]
+    propagate: false
+  
+  fastapi:
+    level: INFO
+    handlers: [console, file_general]
+    propagate: false
+  
+  sklearn:
+    level: WARNING
+    handlers: [file_general]
+    propagate: false
+  
+  joblib:
+    level: WARNING
+    handlers: [file_general]
+    propagate: false
+
+root:
+  level: INFO
+  handlers: [console, file_general]

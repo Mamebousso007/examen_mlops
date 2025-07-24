@@ -1,0 +1,21 @@
+# FastAPI et serveur ASGI
+fastapi
+uvicorn[standard]
+
+# Machine Learning
+scikit-learn
+joblib
+
+# Data processing
+pandas
+
+# Configuration & Validation
+pydantic
+pydantic-settings
+python-dotenv
+
+# Logging avancé
+pyyaml
+
+# Pour gérer les uploads (si besoin)
+python-multipart
